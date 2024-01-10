@@ -19,7 +19,7 @@ spec:
     port: 4318
     targetPort: 4318
     protocol: TCP
-  - name: otlphttpcloudwatch
+  - name: otlpcloudwatch
     port: 4319
     targetPort: 4319
     protocol: TCP

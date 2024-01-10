@@ -102,7 +102,7 @@ spec:
         - name: otlphttp
           containerPort: 4318
           protocol: TCP
-        - name: cloudwatchotlphttp
+        - name: otlpcloudwatch
           containerPort: 4319
           protocol: TCP
         - name: pprof
