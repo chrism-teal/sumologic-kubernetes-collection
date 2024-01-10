@@ -435,7 +435,7 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
-  otlpcloudwatch:
+  otlp/cloudwatch:
     protocols:
       http:
         endpoint: 0.0.0.0:4319
@@ -466,7 +466,7 @@ service:
         - transform/add_timestamp
         - batch
       receivers:
-        - otlpcloudwatch
+        - otlp/cloudwatch
 {{ end }}
 
 {{ if .Values.sumologic.logs.container.enabled }}
