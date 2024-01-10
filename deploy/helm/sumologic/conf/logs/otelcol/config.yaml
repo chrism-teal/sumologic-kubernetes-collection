@@ -325,6 +325,19 @@ processors:
       value: ""
 {{ end }}
 
+{{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+  source/cloudwatch:
+
+      ## required
+      ## add to default value structure
+    collector: {{ .Values.sumologic.collectorName | default .Values.sumologic.clusterName | quote }}
+    source_category: "%{cloudwatch.log.group.name}"
+    source_category_prefix: "cloudwatch/" 
+    source_category_replace_dash: "-"
+    source_host: "%{cloudwatch.log.group.name}"
+    source_name: "%{cloudwatch.log.stream}"
+{{ end }}
+
 {{ if .Values.sumologic.logs.container.enabled }}
   source/containers:
     annotation_prefix: "pod_annotations_"
