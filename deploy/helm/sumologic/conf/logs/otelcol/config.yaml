@@ -435,6 +435,10 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
+  otlpcloudwatch:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4319
 {{ end }}
 
 service:
@@ -446,6 +450,25 @@ service:
     - pprof
   pipelines:
 {{ if or .Values.sumologic.logs.collector.otelcol.enabled .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+
+{{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+    logs/otlp/cloudwatch:
+      exporters:
+{{ include "logs.otelcol.container.exporters" . | indent 8 }}
+      processors:
+        - memory_limiter
+        - filter/include_containers
+        - groupbyattrs/containers
+        - resource/set_empty_source_metadata
+        - sumologic_schema
+        - source/cloudwatch
+        - transform/containers_parse_json
+        - transform/add_timestamp
+        - batch
+      receivers:
+        - otlpcloudwatch
+{{ end }}
+
 {{ if .Values.sumologic.logs.container.enabled }}
     logs/otlp/containers:
       exporters:

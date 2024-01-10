@@ -2,7 +2,7 @@ exporters:
   debug:
     verbosity: detailed
   otlphttp:
-    endpoint: http://${LOGS_METADATA_SVC}.${NAMESPACE}.svc.{{ .Values.sumologic.clusterDNSDomain }}.:4318
+    endpoint: http://${LOGS_METADATA_SVC}.${NAMESPACE}.svc.{{ .Values.sumologic.clusterDNSDomain }}.:4319
     sending_queue:
       queue_size: 10
     # this improves load balancing at the cost of more network traffic
