@@ -214,6 +214,13 @@ processors:
             value: .+
 {{ end }}
 
+{{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+  groupbyattrs/cloudwatch:
+    keys:
+      - cloudwatch.log.group.name
+      - _collector
+{{ end }}
+
 {{ if .Values.sumologic.logs.container.enabled }}
   groupbyattrs/containers:
     keys:
@@ -327,15 +334,12 @@ processors:
 
 {{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
   source/cloudwatch:
-
-      ## required
-      ## add to default value structure
     collector: {{ .Values.sumologic.collectorName | default .Values.sumologic.clusterName | quote }}
     source_category: "%{cloudwatch.log.group.name}"
     source_category_prefix: "cloudwatch/" 
     source_category_replace_dash: "-"
     source_host: "%{cloudwatch.log.group.name}"
-    source_name: "%{cloudwatch.log.stream}"
+    source_name: "%{cloudwatch.log.gorup.name}"
 {{ end }}
 
 {{ if .Values.sumologic.logs.container.enabled }}
@@ -457,12 +461,9 @@ service:
 {{ include "logs.otelcol.container.exporters" . | indent 8 }}
       processors:
         - memory_limiter
-        - filter/include_containers
-        - groupbyattrs/containers
+        - groupbyattrs/cloudwatch
         - resource/set_empty_source_metadata
-        - sumologic_schema
         - source/cloudwatch
-        - transform/containers_parse_json
         - transform/add_timestamp
         - batch
       receivers:

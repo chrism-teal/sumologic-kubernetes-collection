@@ -31,6 +31,7 @@ processors:
       - context: log
         statements:
           - set(attributes["cloudwatch.log.stream"], resource.attributes["cloudwatch.log.stream"])
+          - set(attributes["cloudwatch.log.group.name"], resource.attributes["cloudwatch.log.group.name"])
   groupbyattrs/stream:
     keys:
       - cloudwatch.log.stream
@@ -77,7 +78,6 @@ service:
         - transform/set_source_identifier
         - groupbyattrs/stream
         - transform/parsejson
-        - transform/metadata
         - batch
       exporters:
         - debug 
