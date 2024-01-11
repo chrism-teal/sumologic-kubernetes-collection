@@ -338,10 +338,10 @@ processors:
   source/cloudwatch:
     collector: {{ .Values.sumologic.collectorName | default .Values.sumologic.clusterName | quote }}
     source_category: "%{cloudwatch.log.group.name}"
-    source_category_prefix: "cloudwatch/" 
+    source_category_prefix: "cloudwatch" 
     source_category_replace_dash: "-"
     source_host: "%{cloudwatch.log.group.name}"
-    source_name: "%{cloudwatch.log.group.name}"
+    source_name: "%{cloudwatch.log.group.name}/%{aws.region}"
 {{ end }}
 
 {{ if .Values.sumologic.logs.container.enabled }}
