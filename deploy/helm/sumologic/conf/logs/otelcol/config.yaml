@@ -1,4 +1,6 @@
 exporters:
+  debug:
+    verbosity: detailed
 {{- if eq .Values.sumologic.logs.sourceType "http" }}
 {{ if .Values.sumologic.logs.container.enabled }}
   sumologic/containers:
@@ -459,6 +461,7 @@ service:
     logs/otlp/cloudwatch:
       exporters:
 {{ include "logs.otelcol.container.exporters" . | indent 8 }}
+        - debug
       processors:
         - memory_limiter
         - groupbyattrs/cloudwatch
