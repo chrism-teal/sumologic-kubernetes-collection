@@ -436,7 +436,7 @@ processors:
 {{- end }}
 
 receivers:
-{{ if or .Values.sumologic.logs.collector.otelcol.enabled .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if or .Values.sumologic.logs.collector.otelcol.enabled }}
   otlp:
     protocols:
       http:
