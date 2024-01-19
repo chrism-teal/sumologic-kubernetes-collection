@@ -216,7 +216,7 @@ processors:
             value: .+
 {{ end }}
 
-{{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if .Values.sumologic.logs.collector.otelcol.enabled }}
   groupbyattrs/cloudwatch:
     keys:
       - cloudwatch.log.group.name
@@ -334,7 +334,7 @@ processors:
       value: ""
 {{ end }}
 
-{{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if .Values.sumologic.logs.collector.otelcol.enabled }}
   source/cloudwatch:
     collector: {{ .Values.sumologic.collectorName | default .Values.sumologic.clusterName | quote }}
     source_category: "%{cloudwatch.log.group.name}"
@@ -455,9 +455,9 @@ service:
 {{ end }}
     - pprof
   pipelines:
-{{ if or .Values.sumologic.logs.collector.otelcol.enabled .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if or .Values.sumologic.logs.collector.otelcol.enabled }}
 
-{{ if .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if .Values.sumologic.logs.collector.otelcol.enabled }}
     logs/otlp/cloudwatch:
       exporters:
 {{ include "logs.otelcol.container.exporters" . | indent 8 }}
