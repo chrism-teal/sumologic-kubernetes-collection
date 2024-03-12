@@ -1,6 +1,4 @@
 exporters:
-  debug:
-    verbosity: detailed
   otlphttp:
     endpoint: http://${LOGS_METADATA_SVC}.${NAMESPACE}.svc.{{ .Values.sumologic.clusterDNSDomain }}.:4319
     sending_queue:
@@ -69,7 +67,6 @@ service:
         - transform/parsejson
         - batch
       exporters:
-        - debug 
         - otlphttp
   telemetry:
     logs:
