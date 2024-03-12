@@ -1,8 +1,6 @@
 exporters:
-  debug:
-    verbosity: detailed
   otlphttp:
-    endpoint: http://${LOGS_METADATA_SVC}.${NAMESPACE}.svc.{{ .Values.sumologic.clusterDNSDomain }}.:4318
+    endpoint: http://${LOGS_METADATA_SVC}.${NAMESPACE}.svc.{{ .Values.sumologic.clusterDNSDomain }}.:4319
     sending_queue:
       queue_size: 10
     # this improves load balancing at the cost of more network traffic
@@ -31,6 +29,7 @@ processors:
       - context: log
         statements:
           - set(attributes["cloudwatch.log.stream"], resource.attributes["cloudwatch.log.stream"])
+          - set(attributes["cloudwatch.log.group.name"], resource.attributes["cloudwatch.log.group.name"])
   groupbyattrs/stream:
     keys:
       - cloudwatch.log.stream
@@ -40,27 +39,16 @@ processors:
       - context: log
         statements:
           - set(body, ParseJSON(body)) where IsMatch(body, "^{")
-          - merge_maps(attributes, body, "insert")
+          - merge_maps(attributes, body, "insert") where IsMap(body)
           - set(body, "") where IsMatch(body, "^{")
-  transform/metadata:
-    error_mode: ignore
-    log_statements:
-      - context: log
-        statements:
-          - set(attributes["k8s.container.name"], resource.attributes["cloudwatch.log.stream"])
-          - set(attributes["k8s.pod.name"], resource.attributes["cloudwatch.log.stream"])
-          - set(attributes["k8s.namespace.name"], resource.attributes["cloudwatch.log.stream"])
-          - replace_pattern(attributes["k8s.pod.name"], "^.*kube\\.var\\.log\\.containers\\.([0-9a-zA-Z\\-]+)\\_.*", "$$1")
-          - replace_pattern(attributes["k8s.container.name"], "^.*kube\\.var\\.log\\.containers\\.[0-9a-zA-Z\\-]+\\_[a-zA-Z\\-]*\\_([a-zA-Z]*).*", "$$1")
-          - replace_pattern(attributes["k8s.namespace.name"], "^.*kube\\.var\\.log\\.containers\\.[0-9a-zA-Z\\-]+\\_([a-zA-Z\\-]*)_.*", "$$1")
 receivers:
   awscloudwatch:
     region: {{ .Values.sumologic.logs.collector.otelcloudwatch.region }}
     logs:
       poll_interval: {{ .Values.sumologic.logs.collector.otelcloudwatch.pollInterval }}
+      max_events_per_request: 10000
       groups:
-        named:
-{{ toYaml .Values.sumologic.logs.collector.otelcloudwatch.logGroups | indent 10 }}
+{{ toYaml .Values.sumologic.logs.collector.otelcloudwatch.logGroups | indent 9 }}
 
 service:
   extensions:
@@ -77,10 +65,8 @@ service:
         - transform/set_source_identifier
         - groupbyattrs/stream
         - transform/parsejson
-        - transform/metadata
         - batch
       exporters:
-        - debug 
         - otlphttp
   telemetry:
     logs:

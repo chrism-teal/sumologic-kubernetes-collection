@@ -40,6 +40,8 @@ spec:
     port: 4317
   - name: otlp-http # Default endpoint for OTLP HTTP receiver.
     port: 4318
+  - name: otlp-http-cloudwatch # endpoint for OTLP HTTP cloudwatch receiver.
+    port: 4319
   - name: otlp-grpc-old # Old endpoint for OTLP gRPC receiver.
     port: 55680
   - name: otlp-http-old # Default endpoint for OTLP HTTP receiver.

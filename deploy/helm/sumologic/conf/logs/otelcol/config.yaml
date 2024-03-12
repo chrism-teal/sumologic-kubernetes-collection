@@ -214,6 +214,13 @@ processors:
             value: .+
 {{ end }}
 
+{{ if .Values.sumologic.logs.collector.otelcol.enabled }}
+  groupbyattrs/cloudwatch:
+    keys:
+      - cloudwatch.log.group.name
+      - _collector
+{{ end }}
+
 {{ if .Values.sumologic.logs.container.enabled }}
   groupbyattrs/containers:
     keys:
@@ -325,6 +332,16 @@ processors:
       value: ""
 {{ end }}
 
+{{ if .Values.sumologic.logs.collector.otelcol.enabled }}
+  source/cloudwatch:
+    collector: {{ .Values.sumologic.collectorName | default .Values.sumologic.clusterName | quote }}
+    source_category: "%{cloudwatch.log.group.name}"
+    source_category_prefix: "cloudwatch" 
+    source_category_replace_dash: "-"
+    source_host: "%{cloudwatch.log.group.name}"
+    source_name: "%{cloudwatch.log.group.name}/%{aws.region}"
+{{ end }}
+
 {{ if .Values.sumologic.logs.container.enabled }}
   source/containers:
     annotation_prefix: "pod_annotations_"
@@ -417,11 +434,15 @@ processors:
 {{- end }}
 
 receivers:
-{{ if or .Values.sumologic.logs.collector.otelcol.enabled .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if or .Values.sumologic.logs.collector.otelcol.enabled }}
   otlp:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
+  otlp/cloudwatch:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4319
 {{ end }}
 
 service:
@@ -432,7 +453,23 @@ service:
 {{ end }}
     - pprof
   pipelines:
-{{ if or .Values.sumologic.logs.collector.otelcol.enabled .Values.sumologic.logs.collector.otelcloudwatch.enabled }}
+{{ if or .Values.sumologic.logs.collector.otelcol.enabled }}
+
+{{ if .Values.sumologic.logs.collector.otelcol.enabled }}
+    logs/otlp/cloudwatch:
+      exporters:
+{{ include "logs.otelcol.container.exporters" . | indent 8 }}
+      processors:
+        - memory_limiter
+        - groupbyattrs/cloudwatch
+        - resource/set_empty_source_metadata
+        - source/cloudwatch
+        - transform/add_timestamp
+        - batch
+      receivers:
+        - otlp/cloudwatch
+{{ end }}
+
 {{ if .Values.sumologic.logs.container.enabled }}
     logs/otlp/containers:
       exporters:
