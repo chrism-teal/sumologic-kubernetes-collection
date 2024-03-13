@@ -1,0 +1,7 @@
+tracesSampler:
+  config:
+    merge:
+    override:
+    processors:
+      cascading_filter:
+        num_traces: 10

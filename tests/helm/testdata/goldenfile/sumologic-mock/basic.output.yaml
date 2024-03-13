@@ -1,0 +1,64 @@
+---
+# Source: sumologic/templates/sumologic-mock/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-sumologic-mock
+  namespace: sumologic
+  labels:
+    app: RELEASE-NAME-sumologic-mock
+    sumologic.com/app: sumologic-mock
+    chart: "sumologic-%CURRENT_CHART_VERSION%"
+    release: "RELEASE-NAME"
+    heritage: "Helm"
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "1"
+spec:
+  selector:
+    matchLabels:
+      app: RELEASE-NAME-sumologic-mock
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: RELEASE-NAME-sumologic-mock
+        chart: "sumologic-%CURRENT_CHART_VERSION%"
+        release: "RELEASE-NAME"
+        heritage: "Helm"
+        sumologic.com/app: sumologic-mock
+    spec:
+      serviceAccountName: RELEASE-NAME-sumologic-mock
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext: {}
+      containers:
+        - ports:
+            - containerPort: 3000
+          image: public.ecr.aws/sumologic/sumologic-mock:2.22.0-59-g245ae92
+          name: sumologic-mock
+          args:
+            - sumologic-mock
+            - --hostname=RELEASE-NAME-sumologic-mock.sumologic.svc.cluster.local.
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 768Mi
+      hostname: sumologic-mock
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: regcred

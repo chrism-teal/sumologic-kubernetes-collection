@@ -1,0 +1,10 @@
+tracesGateway:
+  config:
+    merge:
+    override:
+    exporters:
+      loadbalancing:
+        protocol:
+          otlp:
+            sending_queue:
+              queue_size: 100000

@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
       - name: Check if documentation related files changed
         id: changed-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v42
         with:
           files: |
             **/*.md
@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 0
       - name: Check if Helm Chart related files changed
         id: changed-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v42
         with:
           files: |
             deploy/helm/sumologic/**/*
@@ -159,7 +159,7 @@ jobs:
           cache: false
       - name: golangci-lint
         if: needs.chart-changed.outputs.any_changed == 'true'
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: v1.53.3
           working-directory: ./tests/helm/

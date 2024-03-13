@@ -118,6 +118,10 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- template "sumologic.labels.app.setup" . }}
 {{- end -}}
 
+{{- define "sumologic.labels.app.cleanup.secret" -}}
+{{- template "sumologic.labels.app.cleanup" . }}
+{{- end -}}
+
 {{- define "sumologic.labels.app.securitycontextconstraints" -}}
 {{- template "sumologic.fullname" . }}-scc
 {{- end -}}
@@ -255,6 +259,10 @@ helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 {{- end -}}
 
 {{- define "sumologic.metadata.name.cleanup.roles.serviceaccount" -}}
+{{ template "sumologic.metadata.name.cleanup" . }}
+{{- end -}}
+
+{{- define "sumologic.metadata.name.cleanup.secret" -}}
 {{ template "sumologic.metadata.name.cleanup" . }}
 {{- end -}}
 
@@ -583,12 +591,18 @@ Example usage:
 {{- end }}
 {{- end -}}
 
-{{- define "pvcCleaner.job.nodeSelector" -}}
-{{- if .Values.pvcCleaner.job.nodeSelector -}}
-{{- toYaml .Values.pvcCleaner.job.nodeSelector -}}
-{{- else -}}
-{{- template "kubernetes.defaultNodeSelector" . -}}
+{{- define "nodeSelector" -}}
+{{- $nodeSelector := dict "kubernetes.io/os" "linux" -}}
+{{- if .nodeSelector -}}
+{{- $nodeSelector = mergeOverwrite $nodeSelector .nodeSelector -}}
+{{- else if .Values.sumologic.nodeSelector -}}
+{{- $nodeSelector = mergeOverwrite $nodeSelector .Values.sumologic.nodeSelector -}}
 {{- end -}}
+{{- toYaml $nodeSelector -}}
+{{- end -}}
+
+{{- define "pvcCleaner.job.nodeSelector" -}}
+{{- template "nodeSelector" (dict "Values" .Values "nodeSelector" .Values.pvcCleaner.job.nodeSelector)}}
 {{- end -}}
 
 {{- define "pvcCleaner.job.tolerations" -}}
@@ -605,4 +619,48 @@ Example usage:
 {{- else -}}
 {{- template "kubernetes.defaultAffinity" . -}}
 {{- end -}}
+{{- end -}}
+
+{{- define "sumologic.sumologic-mock.name.roles.serviceaccount" -}}
+{{- template "sumologic.fullname" . }}-mock
+{{- end -}}
+
+{{- define "useDefaultConfig" }}
+{{/*
+This function checks if any keys other than 'merge' and 'override' exist in a given map.
+It takes a map as an argument and returns true if extra keys are found, else false.
+
+Example usage:
+{{ $useValuesYamlConfig := include "useDefaultConfig" .Values.tracesSampler.config | trim }}
+*/}}
+{{- $map := . -}}
+{{- $extraKeysExist := false -}}
+{{- range $key, $_ := $map }}
+  {{- if and (ne $key "merge") (ne $key "override") }}
+    {{- $extraKeysExist = true -}}
+  {{- end }}
+{{- end }}
+{{- if $extraKeysExist }}
+true
+{{- else }}
+false
+{{- end }}
+{{- end }}
+
+{{- define "removeMergeAndOverrideKeys" -}}
+{{/*
+This function removes keys 'merge' and 'override' in a given map.
+It takes a map as an argument and returns new map without 'merge' and 'override' keys.
+
+Example usage:
+{{ $finalConfig = include "removeMergeAndOverrideKeys" .Values.tracesSampler.config }}
+*/}}
+{{- $originalMap := . -}}
+{{- $newMap := dict -}}
+{{- range $key, $value := $originalMap -}}
+  {{- if and (ne $key "merge") (ne $key "override") -}}
+    {{- $_ := set $newMap $key $value -}}
+  {{- end -}}
+{{- end -}}
+{{ toYaml $newMap }}
 {{- end -}}

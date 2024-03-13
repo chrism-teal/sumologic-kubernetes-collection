@@ -28,7 +28,6 @@ upgrade:
 		patch-context \
 		remove-tmp \
 		apply-namespace \
-		apply-receiver-mock \
 		grafana-dashboards \
 		helm-dependencies \
 		helm-upgrade \
@@ -40,9 +39,6 @@ remove-tmp:
 
 apply-namespace:
 	kubectl apply -f ${k8s_path}/sumologic.yaml
-
-apply-receiver-mock:
-	kubectl apply -f ${k8s_path}/receiver-mock.yaml
 
 helm-dependencies:
 	helm dependency update "${helm_path}"
@@ -93,9 +89,6 @@ remove-prometheus-crds:
 	for crd in alertmanagers alertmanagerconfigs podmonitors probes prometheuses prometheusrules servicemonitors thanosrulers; do \
 		kubectl delete customresourcedefinitions.apiextensions.k8s.io --ignore-not-found=true $$crd.monitoring.coreos.com; \
 	done
-
-remove-receiver-mock:
-	kubectl delete -f ${k8s_path}/receiver-mock.yaml --ignore-not-found=true
 
 remove-collector:
 	helm delete -n "${namespace}" "${name}"
@@ -299,3 +292,18 @@ istio-disable:
 
 restart-pods:
 	kubectl -n sumologic delete pod --all --force --grace-period=0
+
+install-argocd-binary:
+	curl -LO https://github.com/argoproj/argo-cd/releases/download/v2.9.3/argocd-linux-amd64
+	chmod +x argocd-linux-amd64
+	sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+
+install-argocd:
+	${mkfile_path} \
+	kubectl create namespace argocd
+	kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+	kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+	argocd admin initial-password -n argocd
+
+expose-argocd:
+	kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0

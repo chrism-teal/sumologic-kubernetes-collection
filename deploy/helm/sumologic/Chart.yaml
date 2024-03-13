@@ -1,7 +1,7 @@
 apiVersion: v2
 name: sumologic
-version: 4.3.0
-appVersion: 4.3.0
+version: 4.5.0
+appVersion: 4.5.0
 description: A Helm chart for collecting Kubernetes logs, metrics, traces and events into Sumo Logic.
 type: application
 keywords:
@@ -17,11 +17,11 @@ dependencies:
     repository: https://prometheus-community.github.io/helm-charts
     condition: kube-prometheus-stack.enabled,sumologic.metrics.enabled
   - name: falco
-    version: 3.8.6
+    version: 3.8.7
     repository: https://falcosecurity.github.io/charts
     condition: falco.enabled
   - name: metrics-server
-    version: 6.6.5
+    version: 6.11.2
     repository: https://charts.bitnami.com/bitnami
     condition: metrics-server.enabled
   - name: telegraf-operator
@@ -29,10 +29,14 @@ dependencies:
     repository: https://helm.influxdata.com/
     condition: telegraf-operator.enabled
   - name: tailing-sidecar-operator
-    version: 0.9.0
+    version: 0.10.0
     repository: https://sumologic.github.io/tailing-sidecar
     condition: tailing-sidecar-operator.enabled
   - name: opentelemetry-operator
-    version: 0.44.2
+    version: 0.47.1
     repository: https://open-telemetry.github.io/opentelemetry-helm-charts
     condition: opentelemetry-operator.enabled,sumologic.metrics.collector.otelcol.enabled
+  - name: prometheus-windows-exporter
+    repository: https://prometheus-community.github.io/helm-charts
+    version: "0.3.*"
+    condition: prometheus-windows-exporter.enabled,sumologic.metrics.collector.otelcol.enabled

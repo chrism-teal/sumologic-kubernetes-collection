@@ -5,6 +5,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 const (
@@ -13,15 +18,12 @@ const (
 
 	EnvNameKindImage = "KIND_NODE_IMAGE"
 
-	YamlPathReceiverMock = "yamls/receiver-mock.yaml"
-
 	// default cluster name in Helm chart Config
 	// TODO: read this from values.yaml used for the test directly
 	ClusterName = "kubernetes"
 
-	ReceiverMockServicePort = 3000
-	ReceiverMockServiceName = "receiver-mock"
-	ReceiverMockNamespace   = "receiver-mock"
+	SumologicMockServicePort = 3000
+	SumologicMockServiceName = "sumologic-mock"
 
 	LogsGeneratorNamespace = "logs-generator"
 	LogsGeneratorName      = "logs-generator"
@@ -40,6 +42,9 @@ const (
 	TailingSidecarTestNamespace      = "tailing-sidecar"
 	TailingSidecarTest               = "yamls/tailing-sidecar-test.yaml"
 	TailingSidecarTestDeploymentName = "test-tailing-sidecar-operator"
+
+	AnnotationsTestNamespace = "annotations-test"
+	AnnotationsTest          = "yamls/annotations-test.yaml"
 
 	NginxTelegrafMetricsTest = "yamls/nginx.yaml"
 	NginxTelegrafNamespace   = "nginx"
@@ -152,7 +157,6 @@ var (
 		"coredns_dns_request_duration_seconds_sum",
 		"coredns_dns_requests_total",
 		"coredns_dns_responses_total",
-		"coredns_forward_requests_total",
 		"process_cpu_seconds_total",
 		"process_open_fds",
 		"process_resident_memory_bytes",
@@ -223,9 +227,15 @@ var (
 		"otelcol_processor_groupbyattrs_metric_groups_sum",
 		"otelcol_processor_groupbyattrs_num_non_grouped_metrics",
 		"otelcol_processor_refused_metric_points",
+		"otelcol_processor_batch_metadata_cardinality",
+		"otelcol_otelsvc_k8s_service_table_size",
+		"otelcol_otelsvc_k8s_owner_table_size",
+		"otelcol_exporter_send_failed_metric_points",
 	}
 	LogsOtelcolMetrics = []string{
 		"otelcol_exporter_sent_log_records",
+		"otelcol_exporter_send_failed_log_records",
+		"otelcol_processor_filter_logs_filtered",
 		"otelcol_receiver_accepted_log_records",
 		"otelcol_processor_accepted_log_records",
 		"otelcol_receiver_refused_log_records",
@@ -286,12 +296,19 @@ var (
 	// we accept them, but don't fail if they're not present
 	FlakyMetrics = []string{
 		"otelcol_otelsvc_k8s_pod_deleted",
+		"otelcol_http_server_duration_sum",
+		"otelcol_http_server_response_content_length",
+		"otelcol_http_server_request_content_length",
+		"otelcol_http_server_duration_count",
+		"otelcol_http_server_duration_bucket",
 		"otelcol_processor_batch_batch_size_trigger_send",
+		"otelcol_processor_filter_datapoints_filtered",
 		"otelcol_otelsvc_k8s_ip_lookup_miss",
 		"otelcol_otelsvc_k8s_other_deleted",
 		"otelcol_exporter_enqueue_failed_metric_points",
 		"otelcol_exporter_enqueue_failed_spans",
 		"otelcol_exporter_enqueue_failed_log_records",
+		"otelcol_routing_processor_non_routed_metric_points",
 		"kube_pod_container_status_waiting_reason",
 		"kube_pod_container_status_terminated_reason",
 		// TODO: check different metrics depending on K8s version
@@ -305,6 +322,7 @@ var (
 		"scheduler_scheduling_attempt_duration_seconds_bucket",
 		"cluster_quantile:scheduler_e2e_scheduling_duration_seconds:histogram_quantile",
 		"cluster_quantile:scheduler_scheduling_algorithm_duration_seconds:histogram_quantile",
+		"target_info",
 	}
 
 	NginxMetrics = []string{
@@ -323,6 +341,23 @@ var (
 		"scrape_samples_post_metric_relabeling",
 		"scrape_samples_scraped",
 		"scrape_duration_seconds",
+	}
+
+	// Some metrics might change over k8s versions
+	versionDependentMetrics = map[*version.Version](struct {
+		before []string
+		after  []string
+	}){
+		version.MustParseSemantic("v1.29.0"): {
+			before: []string{
+				"coredns_forward_requests_total",
+			},
+			after: []string{
+				"coredns_proxy_request_duration_seconds_count",
+				"coredns_proxy_request_duration_seconds_bucket",
+				"coredns_proxy_request_duration_seconds_sum",
+			},
+		},
 	}
 )
 
@@ -391,4 +426,29 @@ func InitializeConstants() error {
 	log.Printf("Default kind image: %v", KindImages.Default)
 	log.Printf("Supported kind images: %v", KindImages.Supported)
 	return nil
+}
+
+func getKubernetesVersion(
+	t *testing.T,
+) string {
+	v, err := k8s.GetKubernetesClusterVersionE(t)
+	require.NoError(t, err)
+	return v
+}
+
+func GetVersionDependentMetrics(t *testing.T) []string {
+	res := []string{}
+	currVersion := getKubernetesVersion(t)
+
+	for version, ms := range versionDependentMetrics {
+		cmp, err := version.Compare(currVersion)
+		require.NoError(t, err)
+		if cmp > 0 {
+			res = append(res, ms.before...)
+		} else {
+			res = append(res, ms.after...)
+		}
+	}
+
+	return res
 }

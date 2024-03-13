@@ -115,3 +115,27 @@ otlp
 {{- fail "`sumologic.events.sourceType` can only be `http` or `otlp`" -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "events.collector.files.list" -}}
+- /var/log/pods/{{ template "sumologic.namespace" . }}_{{ template "sumologic.metadata.name.events" . }}*/*/*.log
+{{- end -}}
+
+{{- define "events.statefulset.nodeSelector" -}}
+{{- template "nodeSelector" (dict "Values" .Values "nodeSelector" .Values.otelevents.statefulset.nodeSelector)}}
+{{- end -}}
+
+{{- define "events.statefulset.tolerations" -}}
+{{- if .Values.otelevents.statefulset.tolerations -}}
+{{- toYaml .Values.otelevents.statefulset.tolerations -}}
+{{- else -}}
+{{- template "kubernetes.defaultTolerations" . -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "events.statefulset.affinity" -}}
+{{- if .Values.otelevents.statefulset.affinity -}}
+{{- toYaml .Values.otelevents.statefulset.affinity -}}
+{{- else -}}
+{{- template "kubernetes.defaultAffinity" . -}}
+{{- end -}}
+{{- end -}}

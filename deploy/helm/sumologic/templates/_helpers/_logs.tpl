@@ -70,11 +70,20 @@ Return the exporters for container log pipeline.
 {{- define "logs.otelcol.container.exporters" -}}
 {{- if eq .Values.sumologic.logs.sourceType "http" -}}
 - sumologic/containers
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+- sumologic/sumologic-mock-containers
+{{- end }}
 {{- else if eq .Values.sumologic.logs.sourceType "otlp" }}
 - sumologic
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+- sumologic/sumologic-mock
+{{- end }}
 {{- else -}}
 {{- fail "`sumologic.logs.sourceType` can only be `http` or `otlp`" -}}
 {{- end -}}
+{{- if eq .Values.debug.logs.metadata.print true }}
+- debug
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -85,11 +94,20 @@ Return the exporters for systemd log pipeline.
 {{- define "logs.otelcol.systemd.exporters" -}}
 {{- if eq .Values.sumologic.logs.sourceType "http" -}}
 - sumologic/systemd
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+- sumologic/sumologic-mock-systemd
+{{- end }}
 {{- else if eq .Values.sumologic.logs.sourceType "otlp" }}
 - sumologic
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+- sumologic/sumologic-mock
+{{- end }}
 {{- else -}}
 {{- fail "`sumologic.logs.sourceType` can only be `http` or `otlp`" -}}
 {{- end -}}
+{{- if eq .Values.debug.logs.metadata.print true }}
+- debug
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -100,11 +118,20 @@ Return the exporters for kubelet log pipeline.
 {{- define "logs.otelcol.kubelet.exporters" -}}
 {{- if eq .Values.sumologic.logs.sourceType "http" }}
 - sumologic/systemd
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+- sumologic/sumologic-mock-systemd
+{{- end }}
 {{- else if eq .Values.sumologic.logs.sourceType "otlp" }}
 - sumologic
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+- sumologic/sumologic-mock
+{{- end }}
 {{- else }}
 {{- fail "`sumologic.logs.sourceType` can only be `http` or `otlp`" -}}
 {{- end -}}
+{{- if eq .Values.debug.logs.metadata.print true }}
+- debug
+{{- end }}
 {{- end -}}
 
 {{- define "sumologic.labels.app.logs" -}}
@@ -293,6 +320,14 @@ Return the otelcol log collector image
 {{ template "utils.getOtelImage" (dict "overrideImage" .Values.otellogs.image "defaultImage" .Values.sumologic.otelcolImage) }}
 {{- end -}}
 
+{{- define "sumologic.logs.collector.tolerations" -}}
+{{- if .Values.otellogs.daemonset.tolerations  -}}
+{{- toYaml .Values.otellogs.daemonset.tolerations  -}}
+{{- else -}}
+{{- template "kubernetes.defaultTolerations" . -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Check if autoscaling for metadata logs is enabled.
 
@@ -305,11 +340,7 @@ Example Usage:
 {{- end -}}
 
 {{- define "metadata.logs.statefulset.nodeSelector" -}}
-{{- if .Values.metadata.logs.statefulset.nodeSelector -}}
-{{- toYaml .Values.metadata.logs.statefulset.nodeSelector -}}
-{{- else -}}
-{{- template "kubernetes.defaultNodeSelector" . -}}
-{{- end -}}
+{{- template "nodeSelector" (dict "Values" .Values "nodeSelector" .Values.metadata.logs.statefulset.nodeSelector)}}
 {{- end -}}
 
 {{- define "metadata.logs.statefulset.tolerations" -}}
@@ -326,4 +357,23 @@ Example Usage:
 {{- else -}}
 {{- template "kubernetes.defaultAffinity" . -}}
 {{- end -}}
+{{- end -}}
+
+{{- define "logs.collector.files.list" }}
+{{- if eq (include "logs.collector.otelcol.enabled" .) "true" }}
+{{- $ctx := . }}
+{{- $instance := "" -}}
+{{- $daemonsets := dict "" $.Values.otellogs.daemonset  -}}
+{{- $daemonsets = deepCopy $daemonsets | merge $.Values.otellogs.additionalDaemonSets -}}
+{{- range $name, $value := $daemonsets }}
+{{- if not (eq $name "") }}
+{{- $instance = (printf "-%s" $name ) }}
+{{- end }}
+- /var/log/pods/{{ template "sumologic.namespace"  $ctx }}_{{ printf "%s%s" (include "sumologic.metadata.name.logs.collector.daemonset" $ctx) $instance | trunc 63 | trimSuffix "-" }}*/*/*.log
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "logs.metadata.files.list" -}}
+- /var/log/pods/{{ template "sumologic.namespace" . }}_{{ template "sumologic.metadata.name.logs.statefulset" . }}*/*/*.log
 {{- end -}}

@@ -60,11 +60,7 @@ Example Usage:
 {{- end -}}
 
 {{- define "metrics.remoteWriteProxy.nodeSelector" -}}
-{{- if .Values.sumologic.metrics.remoteWriteProxy.nodeSelector -}}
-{{- toYaml .Values.sumologic.metrics.remoteWriteProxy.nodeSelector -}}
-{{- else -}}
-{{- template "kubernetes.defaultNodeSelector" . -}}
-{{- end -}}
+{{- template "nodeSelector" (dict "Values" .Values "nodeSelector" .Values.sumologic.metrics.remoteWriteProxy.nodeSelector)}}
 {{- end -}}
 
 {{- define "metrics.remoteWriteProxy.tolerations" -}}
@@ -91,11 +87,7 @@ Return the otelcol metrics collector image
 {{- end -}}
 
 {{- define "metrics.collector.otelcol.nodeSelector" -}}
-{{- if .Values.sumologic.metrics.collector.otelcol.nodeSelector -}}
-{{- toYaml .Values.sumologic.metrics.collector.otelcol.nodeSelector -}}
-{{- else -}}
-{{- template "kubernetes.defaultNodeSelector" . -}}
-{{- end -}}
+{{- template "nodeSelector" (dict "Values" .Values "nodeSelector" .Values.sumologic.metrics.collector.otelcol.nodeSelector)}}
 {{- end -}}
 
 {{- define "metrics.collector.otelcol.tolerations" -}}
@@ -115,11 +107,7 @@ Return the otelcol metrics collector image
 {{- end -}}
 
 {{- define "metadata.metrics.statefulset.nodeSelector" -}}
-{{- if .Values.metadata.metrics.statefulset.nodeSelector -}}
-{{- toYaml .Values.metadata.metrics.statefulset.nodeSelector -}}
-{{- else -}}
-{{- template "kubernetes.defaultNodeSelector" . -}}
-{{- end -}}
+{{- template "nodeSelector" (dict "Values" .Values "nodeSelector" .Values.metadata.metrics.statefulset.nodeSelector)}}
 {{- end -}}
 
 {{- define "metadata.metrics.statefulset.tolerations" -}}
@@ -406,4 +394,12 @@ Example:
   {{- end -}}
 {{- end -}}
 {{ print $excludeNamespaceRegex }}
+{{- end -}}
+
+{{- define "metrics.collector.files.list" -}}
+- /var/log/pods/{{ template "sumologic.namespace" . }}_{{ template "sumologic.metadata.name.metrics.collector" . }}*/*/*.log
+{{- end -}}
+
+{{- define "metrics.metadata.files.list" -}}
+- /var/log/pods/{{ template "sumologic.namespace" . }}_{{ template "sumologic.metadata.name.metrics.statefulset" . }}*/*/*.log
 {{- end -}}

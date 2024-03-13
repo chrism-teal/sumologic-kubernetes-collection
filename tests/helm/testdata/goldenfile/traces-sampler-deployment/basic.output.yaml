@@ -28,9 +28,11 @@ spec:
         heritage: "Helm"
     spec:
       serviceAccountName: RELEASE-NAME-sumologic
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
         - name: otelcol
-          image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.90.1-sumo-0"
+          image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.92.0-sumo-0"
           imagePullPolicy: IfNotPresent
           args:
             - --config=/conf/traces.sampler.conf.yaml
@@ -79,6 +81,8 @@ spec:
           volumeMounts:
             - name: otel-collector-config-vol
               mountPath: /conf
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             httpGet:
               path: /
@@ -91,3 +95,5 @@ spec:
         - configMap:
             name: RELEASE-NAME-sumologic-traces-sampler
           name: otel-collector-config-vol
+        - name: tmp
+          emptyDir: {}

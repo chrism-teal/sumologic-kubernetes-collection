@@ -14,7 +14,6 @@ data:
   config.yaml: |
     exporters:
       sumologic:
-        clear_logs_timestamp: false
         client: k8s_%CURRENT_CHART_VERSION%
         endpoint: ${SUMO_ENDPOINT_DEFAULT_OTLP_LOGS_SOURCE}
         log_format: otlp
@@ -241,6 +240,7 @@ data:
         annotation_prefix: pod_annotations_
         collector: my_collectorName
         container_annotations:
+          container_name_key: container
           enabled: false
           prefixes: []
         exclude:
@@ -270,7 +270,7 @@ data:
         source_category_replace_dash: my_systemd_sourceCategoryReplaceDash
         source_host: '%{_sourceHost}'
         source_name: my_systemd_sourceName
-      sumologic_schema:
+      sumologic:
         add_cloud_namespace: false
       transform/add_timestamp:
         log_statements:
@@ -318,7 +318,7 @@ data:
           - resource/add_cluster
           - resource/set_empty_source_metadata
           - resource/containers_copy_node_to_host
-          - sumologic_schema
+          - sumologic
           - source/containers
           - resource/add-resource-attribute-container
           - resource/remove-container

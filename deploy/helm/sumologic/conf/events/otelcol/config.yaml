@@ -3,11 +3,24 @@ exporters:
     client: {{ include "sumologic.sumo_client" . }}
     endpoint: {{ include "sumologic.events.exporter.endpoint" . }}
     log_format: {{ include "sumologic.events.exporter.format" . }}
-    clear_logs_timestamp: false # this only affects the otlp format
     sending_queue:
       enabled: true
 {{- if .Values.sumologic.events.persistence.enabled }}
       storage: file_storage
+{{- end }}
+
+{{- if eq .Values.debug.events.print true }}
+  debug:
+    verbosity: detailed
+{{- end }}
+
+{{- if eq (include "sumologic-mock.forward-events" .) "true" }}
+  sumologic/sumologic-mock:
+    client: {{ include "sumologic.sumo_client" . }}
+    endpoint: {{ include "sumologic-mock.receiver-endpoint" . }}
+    log_format: {{ include "sumologic.events.exporter.format" . }}
+    sending_queue:
+      enabled: true
 {{- end }}
 
 extensions:
@@ -39,7 +52,7 @@ processors:
     source_category_prefix: ""
     source_category_replace_dash: {{ .Values.sumologic.events.sourceCategoryReplaceDash | quote}}
     source_name: {{ .Values.sumologic.events.sourceName | quote}}
-  sumologic_schema:
+  sumologic:
     add_cloud_namespace: false
 
   ## Add timestamp to attributes
@@ -64,11 +77,17 @@ service:
     logs/events:
       exporters:
         - sumologic
+{{- if eq .Values.debug.events.print true }}
+        - debug
+{{- end }}
+{{- if eq (include "sumologic-mock.forward-events" .) "true" }}
+        - sumologic/sumologic-mock
+{{- end }}
       processors:
         - memory_limiter
         - resource/add_cluster
         - source
-        - sumologic_schema
+        - sumologic
         - transform/add_timestamp
         - batch
       receivers:

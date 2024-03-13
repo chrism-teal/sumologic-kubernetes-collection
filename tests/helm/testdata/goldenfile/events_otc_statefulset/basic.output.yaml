@@ -34,6 +34,7 @@ spec:
     spec:
       serviceAccountName: RELEASE-NAME-sumologic
       nodeSelector:
+        kubernetes.io/os: linux
         sumologic.com/kind: worker
       tolerations:
         - effect: NoSchedule
@@ -71,7 +72,7 @@ spec:
       priorityClassName: "prio"
       containers:
         - name: otelcol
-          image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.90.1-sumo-0"
+          image: "public.ecr.aws/sumologic/sumologic-otel-collector:0.92.0-sumo-0"
           imagePullPolicy: IfNotPresent
           args:
             - --config=/etc/otel/config.yaml

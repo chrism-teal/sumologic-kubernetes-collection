@@ -15,7 +15,11 @@ data:
     exporters:
       otlphttp:
         compression: gzip
-        traces_endpoint: ${SUMO_ENDPOINT_DEFAULT_OTLP_TRACES_SOURCE}/v1/traces
+        endpoint: ${SUMO_ENDPOINT_DEFAULT_OTLP_TRACES_SOURCE}
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 10000
     extensions:
       health_check: {}
       memory_ballast:
@@ -54,3 +58,6 @@ data:
           - batch
           receivers:
           - otlp
+      telemetry:
+        logs:
+          level: info

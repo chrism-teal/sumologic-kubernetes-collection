@@ -1,4 +1,9 @@
 exporters:
+{{- if eq .Values.debug.logs.metadata.print true }}
+  debug:
+    verbosity: detailed
+{{- end }}
+
 {{- if eq .Values.sumologic.logs.sourceType "http" }}
 {{ if .Values.sumologic.logs.container.enabled }}
   sumologic/containers:
@@ -13,6 +18,22 @@ exporters:
 {{- if .Values.metadata.persistence.enabled }}
       storage: file_storage
 {{- end }}
+
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+  sumologic/sumologic-mock-containers:
+    endpoint: {{ include "sumologic-mock.receiver-endpoint" . }}
+    json_logs:
+      add_timestamp: false
+    log_format: {{ include "logs.otelcol.container.exporter.format" . }}
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 10_000
+{{- if .Values.metadata.persistence.enabled }}
+      storage: file_storage
+{{- end }}
+{{- end }}
+
 {{- end }}
 
 {{ if .Values.sumologic.logs.systemd.enabled }}
@@ -28,6 +49,22 @@ exporters:
 {{- if .Values.metadata.persistence.enabled }}
       storage: file_storage
 {{- end }}
+
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+  sumologic/sumologic-mock-systemd:
+    endpoint: {{ include "sumologic-mock.receiver-endpoint" . }}
+    json_logs:
+      add_timestamp: false
+    log_format: json
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 10_000
+{{- if .Values.metadata.persistence.enabled }}
+      storage: file_storage
+{{- end }}
+{{- end }}
+
 {{- end }}
 
 {{ else }}
@@ -35,13 +72,26 @@ exporters:
     client: {{ include "sumologic.sumo_client" . }}
     endpoint: ${SUMO_ENDPOINT_DEFAULT_OTLP_LOGS_SOURCE}
     log_format: otlp
-    clear_logs_timestamp: false
     sending_queue:
       enabled: true
       num_consumers: 10
       queue_size: 10_000
 {{- if .Values.metadata.persistence.enabled }}
       storage: file_storage
+{{- end }}
+
+{{- if eq (include "sumologic-mock.forward-logs-metadata" .) "true" }}
+  sumologic/sumologic-mock:
+    client: {{ include "sumologic.sumo_client" . }}
+    endpoint: {{ include "sumologic-mock.receiver-endpoint" . }}
+    log_format: otlp
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 10_000
+{{- if .Values.metadata.persistence.enabled }}
+      storage: file_storage
+{{- end }}
 {{- end }}
 {{- end }}
 
@@ -349,6 +399,7 @@ processors:
     container_annotations:
       enabled: {{ .Values.sumologic.logs.container.perContainerAnnotationsEnabled }}
       prefixes: {{ toJson .Values.sumologic.logs.container.perContainerAnnotationPrefixes }}
+      container_name_key: "container"
     exclude:
       container: {{ .Values.sumologic.logs.container.excludeContainerRegex | quote }}
       namespace: {{ include "logs.excludeNamespaces" . }}
@@ -385,7 +436,7 @@ processors:
 {{ end }}
 
 {{ if .Values.sumologic.logs.container.enabled }}
-  sumologic_schema:
+  sumologic:
     add_cloud_namespace: false
 {{ end }}
 
@@ -482,7 +533,7 @@ service:
         - resource/add_cluster
         - resource/set_empty_source_metadata
         - resource/containers_copy_node_to_host
-        - sumologic_schema
+        - sumologic
         - source/containers
 {{- if .Values.sumologic.logs.container.otelcol.extraProcessors }}
 {{- range $processor := .Values.sumologic.logs.container.otelcol.extraProcessors }}

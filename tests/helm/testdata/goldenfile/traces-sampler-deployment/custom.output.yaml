@@ -28,6 +28,8 @@ spec:
         heritage: "Helm"
     spec:
       serviceAccountName: RELEASE-NAME-sumologic
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
         - name: otelcol
           image: "my_repository:my_tag"
@@ -74,6 +76,8 @@ spec:
           volumeMounts:
             - name: otel-collector-config-vol
               mountPath: /conf
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             httpGet:
               path: /
@@ -86,3 +90,5 @@ spec:
         - configMap:
             name: RELEASE-NAME-sumologic-traces-sampler
           name: otel-collector-config-vol
+        - name: tmp
+          emptyDir: {}
